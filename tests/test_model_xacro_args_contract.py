@@ -5,7 +5,6 @@ import pytest
 import yaml
 
 from conftest import PACKAGE_DIR
-from robot_forki3 import model_utils
 
 RUNTIME_XACRO_ARGS = {'namespace', 'robot_name', 'sim_file'}
 
@@ -21,16 +20,15 @@ def _normalize_scalar(value: object) -> str:
     return str(value)
 
 
-@pytest.mark.parametrize('robot_model', ['base', 'sensors1'])
+@pytest.mark.parametrize('robot_model', ['base', 'a'])
 def test_default_model_xacro_args_match_the_xacro_contract(robot_model: str) -> None:
-    common_defaults = _xacro_arg_defaults(PACKAGE_DIR / 'urdf' / 'includes' / 'common.xacro')
-    model_defaults = common_defaults
+    common_defaults = _xacro_arg_defaults(PACKAGE_DIR / 'urdf' / 'common.xacro')
+    fork_defaults = _xacro_arg_defaults(PACKAGE_DIR / 'urdf' / 'fork_macro.xacro')
+    model_defaults = {**common_defaults, **fork_defaults}
 
-    if robot_model == 'sensors1':
-        sensor_defaults = _xacro_arg_defaults(
-            PACKAGE_DIR / 'urdf' / 'models' / 'model_sensors1.xacro'
-        )
-        model_defaults = {**common_defaults, **sensor_defaults}
+    if robot_model == 'a':
+        sensor_defaults = _xacro_arg_defaults(PACKAGE_DIR / 'urdf' / 'robot_forki3_a.xacro')
+        model_defaults = {**common_defaults, **fork_defaults, **sensor_defaults}
 
     expected_defaults = {
         name: value for name, value in model_defaults.items() if name not in RUNTIME_XACRO_ARGS
@@ -45,11 +43,7 @@ def test_default_model_xacro_args_match_the_xacro_contract(robot_model: str) -> 
         assert _normalize_scalar(configured_defaults[name]).lower() == expected.lower()
 
 
-def test_model_utils_lists_public_robot_models() -> None:
-    assert model_utils.get_models() == ['base', 'sensors1']
-
-
 def test_legacy_xargs_contract_is_removed() -> None:
-    xargs_dir = PACKAGE_DIR / 'robot_forki3' / 'xargs'
+    xargs_dir = PACKAGE_DIR / 'xargs'
 
     assert not list(xargs_dir.glob('*.yaml'))

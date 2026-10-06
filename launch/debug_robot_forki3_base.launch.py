@@ -5,14 +5,17 @@ Use this launch file to inspect URDF/Xacro changes and Gazebo plugins without st
 simulation stack.
 """
 
-from functools import partial
+from datetime import datetime
 import json
+import os
+from tempfile import mkstemp
 
 from launch import LaunchContext
 from launch import LaunchDescription
 from launch import LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument
 from launch.actions import EmitEvent
+from launch.actions import ExecuteProcess
 from launch.actions import IncludeLaunchDescription
 from launch.actions import LogInfo
 from launch.actions import OpaqueFunction
@@ -27,6 +30,7 @@ from launch.logging import get_logger
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackagePrefix
 from launch_ros.substitutions import FindPackageShare
 from rclpy.exceptions import InvalidTopicNameException
 import rclpy.validate_full_topic_name
@@ -37,6 +41,8 @@ def generate_launch_description() -> LaunchDescription:
     """Launch the Forki3 base model in a Gazebo world for debugging and inspection."""
     actions: list[LaunchDescriptionEntity] = [
         SetLaunchConfiguration('namespace', '/sim_debug'),
+        # Child launches reuse namespace; keep the project value available for every include.
+        SetLaunchConfiguration('project_namespace', LaunchConfiguration('namespace')),
         SetLaunchConfiguration('use_sim_time', 'True'),
         SetLaunchConfiguration('world_name', 'debug_world'),
         DeclareLaunchArgument(
@@ -46,7 +52,7 @@ def generate_launch_description() -> LaunchDescription:
             'robot_description_topic',
             default_value='robot_description',
             description=(
-                'Topic shared by robot_state_publisher and Gazebo model spawn. '
+                'Topic published by robot_state_publisher. '
                 'Relative names resolve inside the robot namespace.'
             ),
         ),
@@ -131,52 +137,95 @@ def generate_launch_description() -> LaunchDescription:
             choices=['True', 'true', 'False', 'false'],
             description='Launch the Gazebo graphical client.',
         ),
-        rlh.RequireFile(path=LaunchConfiguration('robot_params_file')),
         rlh.RequireFile(path=LaunchConfiguration('robot_sim_file')),
         rlh.RequireFile(path=LaunchConfiguration('robot_bridge_config_file')),
         rlh.SetRobotNamespace(
-            namespace=LaunchConfiguration('namespace'),
+            namespace=LaunchConfiguration('project_namespace'),
             robot_name=LaunchConfiguration('robot_name'),
             output_context_key='robot_namespace',
         ),
         rlh.SetRobotPrefix(
             robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'
         ),
-        # Keep the original path when substitutions are disabled.
-        SetLaunchConfiguration(
-            'resolved_robot_params_file', LaunchConfiguration('robot_params_file')
-        ),
-        # When enabled, render once and replace the shared path before any child launch starts.
-        rlh.RenderParamsFile(
+        rlh.ProcessParamsFile(
             params_file=LaunchConfiguration('robot_params_file'),
+            allow_substs=LaunchConfiguration('robot_params_file_allow_substs'),
             output_context_key='resolved_robot_params_file',
-            condition=IfCondition(LaunchConfiguration('robot_params_file_allow_substs')),
         ),
-    ]
-
-    before_spawn_actions: list[LaunchDescriptionEntity] = [
+        OpaqueFunction(function=_set_robot_urdf_file),
+        _include_render_robot_urdf(),
         _include_spawn_world(),
-        OpaqueFunction(function=_include_robot_state_publisher),
     ]
 
-    spawn_and_wait_action = OpaqueFunction(
-        function=_launch_spawn_sequence,
-        kwargs={
-            # These actions start only after Gazebo reports a successful model spawn.
-            'after_spawn_actions': [
-                # Keep model-dependent processes explicit and in launch order.
-                _include_bridge(),
-                _include_kinematics(),
-                _include_fork_control(),
-                _launch_rviz(),
-            ]
-        },
+    # Wait for the Gazebo create service before launching the remaining actions.
+    wait_for_create_service = ExecuteProcess(
+        cmd=[
+            PathJoinSubstitution(
+                [
+                    FindPackagePrefix('ros_gz_tools'),
+                    'lib',
+                    'ros_gz_tools',
+                    'wait_for_gz_service.py',
+                ]
+            ),
+            ['/world/', LaunchConfiguration('world_name'), '/create'],
+        ],
+        output='screen',
     )
 
-    actions.extend(before_spawn_actions)
-    actions.append(spawn_and_wait_action)
+    actions.extend(
+        [
+            RegisterEventHandler(
+                OnProcessExit(
+                    target_action=wait_for_create_service,
+                    # Spawn the model and launch the remaining actions.
+                    on_exit=lambda event, context: _launch_actions_after_world_ready(
+                        event, context
+                    ),
+                )
+            ),
+            wait_for_create_service,
+        ]
+    )
 
     return LaunchDescription(actions)
+
+
+def _set_robot_urdf_file(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+    """Create a unique persistent URDF path for this robot namespace."""
+    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
+    flattened_namespace = rlh.flatten_namespace(robot_namespace, '_')
+    if not flattened_namespace:
+        raise ValueError('robot_namespace must not flatten to an empty URDF filename prefix.')
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    file_descriptor, output_path = mkstemp(
+        prefix=f'{flattened_namespace}_{timestamp}_', suffix='.urdf', dir='/tmp'
+    )
+    os.close(file_descriptor)
+    ctx.launch_configurations['robot_urdf_file'] = output_path
+    return [LogInfo(msg=f'Robot URDF output: {output_path}')]
+
+
+def _include_render_robot_urdf() -> IncludeLaunchDescription:
+    """Render the Forki3 Xacro once before starting the world and state publisher."""
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [FindPackageShare('robot_forki3'), 'launch', 'render_robot_urdf.launch.py']
+            )
+        ),
+        launch_arguments={
+            'namespace': LaunchConfiguration('project_namespace'),
+            'robot_name': LaunchConfiguration('robot_name'),
+            'robot_xacro_file': PathJoinSubstitution(
+                [FindPackageShare('robot_forki3'), 'urdf', 'robot_forki3_base.xacro']
+            ),
+            'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
+            'robot_sim_file': LaunchConfiguration('robot_sim_file'),
+            'robot_urdf_file': LaunchConfiguration('robot_urdf_file'),
+        }.items(),
+    )
 
 
 def _include_spawn_world() -> IncludeLaunchDescription:
@@ -213,7 +262,7 @@ def _include_spawn_world() -> IncludeLaunchDescription:
     )
 
 
-def _include_robot_state_publisher(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+def _include_robot_state_publisher(ctx: LaunchContext) -> IncludeLaunchDescription:
     """Prepend the debug topic remapping and include robot_state_publisher."""
     robot_description_topic = LaunchConfiguration('robot_description_topic').perform(ctx).strip()
     _validate_robot_description_topic(robot_description_topic)
@@ -240,51 +289,44 @@ def _include_robot_state_publisher(ctx: LaunchContext) -> list[LaunchDescription
         *user_arguments,
     ]
 
-    return [
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare('robot_forki3'),
-                        'launch',
-                        '_robot_state_publisher.launch.py',
-                    ]
-                )
-            ),
-            launch_arguments={
-                'namespace': LaunchConfiguration('namespace'),
-                'robot_model': 'base',
-                'robot_name': LaunchConfiguration('robot_name'),
-                'robot_rsp_params_file': LaunchConfiguration('resolved_robot_params_file'),
-                'robot_rsp_params_file_allow_substs': 'False',
-                'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
-                'robot_sim_file': LaunchConfiguration('robot_sim_file'),
-                'node_args': json.dumps(node_arguments),
-            }.items(),
-        )
-    ]
-
-
-def _launch_spawn_sequence(
-    ctx: LaunchContext, *, after_spawn_actions: list[LaunchDescriptionEntity]
-) -> list[LaunchDescriptionEntity]:
-    """Spawn the model and register the actions that require a successful spawn."""
-    robot_name = LaunchConfiguration('robot_name').perform(ctx)
-    namespace = LaunchConfiguration('namespace').perform(ctx)
-    configured_topic = LaunchConfiguration('robot_description_topic').perform(ctx).strip()
-    robot_description_topic = _make_robot_description_topic(
-        namespace, robot_name, configured_topic
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [FindPackageShare('robot_forki3'), 'launch', 'robot_state_publisher.launch.py']
+            )
+        ),
+        launch_arguments={
+            'namespace': LaunchConfiguration('project_namespace'),
+            'robot_urdf_file': LaunchConfiguration('robot_urdf_file'),
+            'robot_name': LaunchConfiguration('robot_name'),
+            'robot_rsp_params_file': LaunchConfiguration('resolved_robot_params_file'),
+            'robot_rsp_params_file_allow_substs': 'False',
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'node_args': json.dumps(node_arguments),
+        }.items(),
     )
-    spawn_model = Node(
+
+
+def _launch_actions_after_world_ready(
+    event: ProcessExited, ctx: LaunchContext
+) -> list[LaunchDescriptionEntity]:
+    """Create the model only after the Gazebo world advertises its create service."""
+    if event.returncode != 0:
+        reason = f'Gazebo world readiness check failed with return code {event.returncode}.'
+        get_logger('robot_forki3').error(reason)
+        return [EmitEvent(event=Shutdown(reason=reason))]
+
+    robot_name = LaunchConfiguration('robot_name').perform(ctx)
+
+    spawn_model_action = Node(
         package='ros_gz_sim',
         executable='create',
         parameters=[
             {
                 'world': LaunchConfiguration('world_name'),
-                'file': '',
+                'file': LaunchConfiguration('robot_urdf_file'),
                 'string': '',
-                'topic': robot_description_topic,
+                'topic': '',
                 'name': robot_name,
                 'allow_renaming': False,
                 'x': 0.0,
@@ -302,8 +344,8 @@ def _launch_spawn_sequence(
     return [
         RegisterEventHandler(
             OnProcessExit(
-                target_action=spawn_model,
-                on_exit=partial(_launch_after_spawn, after_spawn_actions=after_spawn_actions),
+                target_action=spawn_model_action,
+                on_exit=lambda event, context: _launch_actions_after_model_ready(event, context),
             )
         ),
         LogInfo(
@@ -315,15 +357,12 @@ def _launch_spawn_sequence(
                 "'",
             ]
         ),
-        spawn_model,
+        spawn_model_action,
     ]
 
 
-def _launch_after_spawn(
-    event: ProcessExited,
-    _ctx: LaunchContext,
-    *,
-    after_spawn_actions: list[LaunchDescriptionEntity],
+def _launch_actions_after_model_ready(
+    event: ProcessExited, ctx: LaunchContext
 ) -> list[LaunchDescriptionEntity]:
     """Start model-dependent processes only after Gazebo finishes spawning the robot."""
     if event.returncode != 0:
@@ -331,12 +370,18 @@ def _launch_after_spawn(
         get_logger('robot_forki3').error(reason)
         return [EmitEvent(event=Shutdown(reason=reason))]
 
-    return after_spawn_actions
+    return [
+        _include_robot_state_publisher(ctx),
+        _include_bridge(),
+        _include_kinematics(),
+        _include_fork_control(),
+        _launch_rviz(),
+    ]
 
 
 def _validate_robot_description_topic(topic: str) -> None:
     """
-    Validate one concrete relative or absolute topic shared by RSP and Gazebo spawn.
+    Validate one concrete relative or absolute topic published by robot_state_publisher.
 
     A temporary ``/`` is added to a relative topic so the fully qualified ROS validator can check
     every name segment. This temporary value is only used for validation. It does not modify the
@@ -355,47 +400,14 @@ def _validate_robot_description_topic(topic: str) -> None:
         ) from exc
 
 
-def _make_robot_description_topic(namespace: str, robot_name: str, configured_topic: str) -> str:
-    """
-    Build the robot topic used by Gazebo from the parent namespace and robot name.
-
-    ``make_robot_namespace`` validates ``robot_name`` and combines it with ``namespace``. An
-    absolute configured topic ignores that robot namespace. A relative configured topic is appended
-    without changing whether the resulting robot topic is relative or absolute.
-
-    When the result is relative, a temporary ``/`` is added to a copy before calling the fully
-    qualified ROS validator. The temporary value is never returned or passed to another node.
-    """
-    robot_namespace = rlh.make_robot_namespace(namespace, robot_name)
-    _validate_robot_description_topic(configured_topic)
-
-    if configured_topic.startswith('/'):
-        resolved_topic = configured_topic
-    elif robot_namespace in ('', '/'):
-        resolved_topic = robot_namespace + configured_topic
-    else:
-        resolved_topic = f'{robot_namespace}/{configured_topic}'
-
-    topic_to_validate = resolved_topic if resolved_topic.startswith('/') else f'/{resolved_topic}'
-
-    try:
-        rclpy.validate_full_topic_name.validate_full_topic_name(topic_to_validate)
-    except InvalidTopicNameException as exc:
-        raise ValueError(
-            f'Resolved robot_description_topic is invalid: {resolved_topic!r}.'
-        ) from exc
-
-    return resolved_topic
-
-
 def _include_bridge() -> IncludeLaunchDescription:
-    """Start the model bridge after starting the Gazebo spawn process."""
+    """Start the model bridge after Gazebo reports a successful model spawn."""
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare('robot_forki3'), 'launch', '_bridge.launch.py'])
+            PathJoinSubstitution([FindPackageShare('robot_forki3'), 'launch', 'bridge.launch.py'])
         ),
         launch_arguments={
-            'namespace': LaunchConfiguration('namespace'),
+            'namespace': LaunchConfiguration('project_namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
             'robot_bridge_params_file': LaunchConfiguration('resolved_robot_params_file'),
             'robot_bridge_params_file_allow_substs': 'False',
@@ -411,15 +423,11 @@ def _include_kinematics() -> IncludeLaunchDescription:
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
-                [
-                    FindPackageShare('robot_forki3'),
-                    'launch',
-                    '_ground_vehicle_kinematics.launch.py',
-                ]
+                [FindPackageShare('robot_forki3'), 'launch', 'ground_vehicle_kinematics.launch.py']
             )
         ),
         launch_arguments={
-            'namespace': LaunchConfiguration('namespace'),
+            'namespace': LaunchConfiguration('project_namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
             'robot_params_file': LaunchConfiguration('resolved_robot_params_file'),
             'robot_params_file_allow_substs': 'False',
@@ -434,11 +442,11 @@ def _include_fork_control() -> IncludeLaunchDescription:
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
-                [FindPackageShare('robot_forki3'), 'launch', '_fork_control.launch.py']
+                [FindPackageShare('robot_forki3'), 'launch', 'fork_control.launch.py']
             )
         ),
         launch_arguments={
-            'namespace': LaunchConfiguration('namespace'),
+            'namespace': LaunchConfiguration('project_namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
             'robot_params_file': LaunchConfiguration('resolved_robot_params_file'),
             'robot_params_file_allow_substs': 'False',
@@ -457,7 +465,7 @@ def _launch_rviz() -> Node:
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        namespace=LaunchConfiguration('namespace'),
+        namespace=LaunchConfiguration('project_namespace'),
         arguments=[
             '-d',
             PathJoinSubstitution([FindPackageShare('robot_forki3'), 'rviz', 'sim_debug.rviz']),

@@ -24,7 +24,7 @@
     joint_states_topic: joint_states
 
     # This must match exactly the entry published in JointState.name.
-    joint_name: $(var robot_prefix)fork_carriage_joint
+    joint_name: $(var robot_prefix)fork_root_joint
 
     # These limits must match the fork joint limits configured in the robot xacro/URDF.
     lower_limit: 0.0
@@ -65,7 +65,7 @@
     convergence_threshold: 0.01
     execution_loop_frequency: 10.0
     low_pass_filter_coeff: 0.10
-    joint_name: $(var robot_prefix)fork_carriage_joint
+    joint_name: $(var robot_prefix)fork_root_joint
     command_topic: joint_commands/fork
     joint_states_topic: joint_states
 
@@ -105,9 +105,9 @@
 
       steerable_wheel_0:
         radius: 0.127
-        dist: 0.50
-        alpha: 3.141592653589793 # rad = pi
-        beta: -1.5707963267948966 # rad = pi/2 - alpha_0
+        dist: 0.4861583853484584
+        alpha: 0.0 # rad; common branch on the positive X axis
+        beta: 1.5707963267948966 # rad = pi/2 - alpha_0
         name: "$(var robot_prefix)steerable_wheel_0"
         steering_joint:
           name: "$(var robot_prefix)steerable_wheel_0_steering_joint"
@@ -120,9 +120,9 @@
 
       steerable_wheel_1:
         radius: 0.127
-        dist: 0.50
-        alpha: 2.6878070480712677 # rad = 154 deg
-        beta: -1.117010721276371 # rad = pi/2 - alpha_1
+        dist: 0.4861583853484584
+        alpha: 2.6766054678962883 # rad = 153.358196732096 deg
+        beta: -1.1058091411013917 # rad = pi/2 - alpha_1
         name: "$(var robot_prefix)steerable_wheel_1"
         steering_joint:
           name: "$(var robot_prefix)steerable_wheel_1_steering_joint"
@@ -135,9 +135,9 @@
 
       steerable_wheel_2:
         radius: 0.127
-        dist: 0.50
-        alpha: -2.6878070480712677 # rad = -154 deg
-        beta: 4.258603374866164 # rad = pi/2 - alpha_2 = pi/2 - (-alpha_1) = pi/2 + alpha_1
+        dist: 0.4861583853484584
+        alpha: -2.6766054678962883 # rad = -153.358196732096 deg
+        beta: 4.247401794691185 # rad = pi/2 - alpha_2
         name: "$(var robot_prefix)steerable_wheel_2"
         steering_joint:
           name: "$(var robot_prefix)steerable_wheel_2_steering_joint"

@@ -3,7 +3,7 @@ set -euo pipefail
 
 package_share="$(ros2 pkg prefix robot_forki3)/share/robot_forki3"
 
-ros2 launch robot_forki3 debug_model_base.launch.py \
+ros2 launch robot_forki3 debug_robot_forki3_base.launch.py \
     robot_name:=forki3 \
     robot_params_file:="${package_share}/config/model_base/default_params.yaml" \
     robot_params_file_allow_substs:=True \

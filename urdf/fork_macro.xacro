@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<!--
+Forki3 fork macro.
+
+The macro creates a vertically actuated root frame. The complete fork is represented by one OBJ
+visual mesh and one STL collision mesh on that root link.
+-->
+<robot name="forki3_fork_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find robotics_description)/urdf/common/all_commons.xacro"/>
+  <xacro:include filename="$(find robotics_description)/urdf/extras/forks/gz_plugins/plugin_fork_joint_f64_pos_velcmd_macro.xacro"/>
+
+  <!--
+  Creates the Forki3 fork assembly.
+
+  joint_parent_fr_root_fr is the root-frame pose relative to parent_frame. Its value is
+  `x y z roll pitch yaw`.
+  limits is `lower upper velocity effort` for the carriage prismatic joint.
+  dynamics is `damping friction` for the carriage prismatic joint.
+  Simulation parameters are explicit macro fields so the caller owns YAML parsing.
+  -->
+  <xacro:macro name="fork"
+               params="name
+                       prefix
+                       parent_frame
+                       joint_parent_fr_root_fr
+                       use_visual
+                       use_collision
+                       color
+                       limits
+                       dynamics
+                       rest_clearance
+                       controller_enabled
+                       controller_initial_position
+                       controller_topic
+                       controller_vel_max
+                       robot_namespace">
+    <xacro:property name="visual_mesh"       value="robot_forki3/meshes/fork.obj"/>
+    <xacro:property name="collision_mesh"    value="robot_forki3/meshes/fork.stl"/>
+    <xacro:property name="limits_seq"        value="${str(limits).split()}"/>
+    <xacro:property name="dynamics_seq"      value="${str(dynamics).split()}"/>
+    <xacro:property name="parent_root_items" value="${str(joint_parent_fr_root_fr).split()}"/>
+
+    <xacro:if value="${len(limits_seq) != 4}">
+      ${xacro.fatal("fork: limits must contain exactly 4 values: lower upper velocity effort")}
+    </xacro:if>
+    <xacro:if value="${len(dynamics_seq) != 2}">
+      ${xacro.fatal("fork: dynamics must contain exactly 2 values: damping friction")}
+    </xacro:if>
+    <xacro:if value="${len(parent_root_items) != 6}">
+      ${xacro.fatal("fork: joint_parent_fr_root_fr must be 'x y z roll pitch yaw'")}
+    </xacro:if>
+
+    <xacro:property name="lower_limit"    value="${float(limits_seq[0])}"/>
+    <xacro:property name="upper_limit"    value="${float(limits_seq[1])}"/>
+    <xacro:property name="velocity_limit" value="${float(limits_seq[2])}"/>
+    <xacro:property name="effort_limit"   value="${float(limits_seq[3])}"/>
+    <xacro:property name="damping"        value="${float(dynamics_seq[0])}"/>
+    <xacro:property name="friction"       value="${float(dynamics_seq[1])}"/>
+
+    <xacro:if value="${lower_limit > 0.0}">
+      ${xacro.fatal("fork: lower limit must be less than or equal to zero")}
+    </xacro:if>
+
+    <xacro:if value="${upper_limit &lt; 0.0 or velocity_limit &lt;= 0.0 or effort_limit &lt;= 0.0}">
+      ${xacro.fatal("fork: upper, velocity, and effort limits must be positive")}
+    </xacro:if>
+    <xacro:if value="${damping &lt; 0.0 or friction &lt; 0.0}">
+      ${xacro.fatal("fork: damping and friction must be non-negative")}
+    </xacro:if>
+
+    <xacro:if value="${python.abs(lower_limit) > float(rest_clearance)}">
+      ${xacro.fatal("fork: limits and rest_clearance are inconsistent")}
+    </xacro:if>
+
+    <xacro:property name="visual_color"
+                    value="${prefix + name + '_color ' + color if color != '' else ''}"/>
+
+    <link name="${prefix}${name}_root_link">
+      <xacro:if value="${use_visual}">
+        <xacro:visual_mesh mesh="${visual_mesh}" color="${visual_color}"/>
+      </xacro:if>
+      <xacro:if value="${use_collision}">
+        <xacro:collision_mesh mesh="${collision_mesh}"/>
+      </xacro:if>
+      <xacro:null_inertia/>
+    </link>
+
+    <joint name="${prefix}${name}_root_joint" type="prismatic">
+      <parent link="${parent_frame}"/>
+      <child link="${prefix}${name}_root_link"/>
+      <origin rpy="${parent_root_items[3]} ${parent_root_items[4]} ${parent_root_items[5]}"
+              xyz="${parent_root_items[0]} ${parent_root_items[1]} ${parent_root_items[2]}"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="${damping}" friction="${friction}"/>
+      <limit lower="${lower_limit}"
+             upper="${upper_limit}"
+             effort="${effort_limit}"
+             velocity="${velocity_limit}"/>
+    </joint>
+
+    <xacro:if value="${controller_enabled}">
+      <gazebo>
+        <xacro:if value="${controller_topic == ''}">
+          ${xacro.fatal("fork_controller.topic is required when fork_controller.enabled is true.")}
+        </xacro:if>
+        <xacro:plugin_fork_joint_f64_pos_velcmd
+          joint_name="${prefix}${name}_root_joint"
+          joint_limits="${limits}"
+          vel_max="${controller_vel_max}"
+          initial_position="${controller_initial_position}"
+          namespace="${robot_namespace}"
+          topic="${controller_topic}"/>
+      </gazebo>
+    </xacro:if>
+  </xacro:macro>
+</robot>

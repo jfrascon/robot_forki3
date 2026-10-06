@@ -4,7 +4,7 @@
   <!--
   The model `base` is the base forki3 robot.
   -->
-  <xacro:include filename="$(find robot_forki3)/urdf/includes/common.xacro"/>
+  <xacro:include filename="$(find robot_forki3)/urdf/common.xacro"/>
 
   <!--
   Be aware that if a property is not defined in this it is defined in the included model above.
@@ -35,7 +35,7 @@
 
           <xacro:plugin_joint_state_publisher topic="${resolved_js_topic}">
             <joint_names>
-              <joint_name>${robot_prefix}${fork_name}_carriage_joint</joint_name>
+              <joint_name>${robot_prefix}${fork_name}_root_joint</joint_name>
               <joint_name>${robot_prefix}${steerable_wheel_0_name}_steering_joint</joint_name>
               <joint_name>${robot_prefix}${steerable_wheel_0_name}_rotation_joint</joint_name>
               <joint_name>${robot_prefix}${steerable_wheel_1_name}_steering_joint</joint_name>

@@ -23,8 +23,6 @@ The common robot contains:
   <xacro:include filename="${robotics_description_pkg_dir}/urdf/common/all_commons.xacro"/>
   <xacro:include filename="${robotics_description_pkg_dir}/urdf/wheels/all_wheels.xacro"/>
   <xacro:include filename="${robotics_description_pkg_dir}/urdf/wheels/generic_macros/all_wheels_plugins.xacro"/>
-  <xacro:include filename="${robotics_description_pkg_dir}/urdf/extras/fork_simple/fork_simple_macro.xacro"/>
-  <xacro:include filename="${robotics_description_pkg_dir}/urdf/extras/fork_simple/generic_macros/plugin_fork_joint_f64_pos_pid_macro.xacro"/>
   <xacro:include filename="${robotics_description_pkg_dir}/urdf/gz_system_plugins/all_gz_system_plugins.xacro"/>
 
   <!-- ===================================================================== -->
@@ -38,55 +36,28 @@ The common robot contains:
   <xacro:arg name="sim_file"     default=""/>
 
   <!--
-  Args for body
-  The default values for the body correspond to the default mesh (mass, size, and inertia are consistent with that
-  mesh). If the user changes the body mesh, they should also update the corresponding body parameters to
-  maintain a consistent model. However, we cannot enforce this consistency in the xargs, so we provide the parameters
-  independently and document their relationship in the description. The user is responsible for ensuring that the
-  parameters are consistent with the chosen mesh.
-  If the user scales body_mesh through body_scale, body_size must represent the final scaled dimensions.
+  User-configurable body options. The physical geometry, mass, mesh, scale, and wheel placement
+  are fixed properties below so they remain consistent with the measured Forki3 model.
   -->
-  <xacro:arg name="body_use_inertial"      default="True"/>
-  <xacro:arg name="mass"                   default="500"/>
-  <xacro:arg name="body_size"              default="1.531 0.774 1.64"/>
-  <xacro:arg name="ballast_size_z"         default="0.1"/>
-  <xacro:arg name="body_ground_clearance"  default="0.06"/>
-  <xacro:arg name="dist_to_wheels"         default="0.50"/>
-  <xacro:arg name="alpha_deg"              default="154"/>
-  <xacro:arg name="body_mesh"              default="robot_forki3/meshes/forklift_chassis.stl"/>
-  <xacro:arg name="body_scale"             default="1.0 1.0 1.0"/>
-  <xacro:arg name="body_color"             default="0.0 0.0 1.0 1.0"/>
+  <xacro:arg name="body_use_visual"    default="True"/>
+  <xacro:arg name="body_use_collision" default="True"/>
+  <xacro:arg name="body_use_inertial"  default="False"/>
+  <xacro:arg name="body_color"         default=""/>
 
-  <!-- Wheels always use collision elements. Read the steerable_wheel macro for more details. -->
-  <xacro:arg name="s_wheel_use_inertial"  default="True"/>
-  <xacro:arg name="s_wheel_mass"          default="10.0"/>
-  <xacro:arg name="s_wheel_radius"        default="0.127"/>
-  <xacro:arg name="s_wheel_thickness"     default="0.082"/>
-  <xacro:arg name="s_wheel_color"         default="0.1 0.1 0.1 1.0"/>
+  <xacro:arg name="fork_use_visual"    default="True"/>
+  <xacro:arg name="fork_use_collision" default="True"/>
+  <xacro:arg name="fork_color"         default=""/>
+
+  <!-- Wheel collision is always enabled. Each wheel visual can be disabled independently. -->
+  <xacro:arg name="s_wheel_front_use_visual" default="True"/>
+  <xacro:arg name="s_wheel_left_use_visual"  default="True"/>
+  <xacro:arg name="s_wheel_right_use_visual" default="True"/>
+  <xacro:arg name="s_wheel_use_inertial"     default="True"/>
+  <xacro:arg name="s_wheel_color"            default="0.0 0.0 0.0 1.0"/>
   <!--
   Note: If you want the wheel to be able to reach +-pi rad angle (+-180 degress), set limits to +-3.1416.
   pi = 3.141592654.... < 3.1416
   -->
-  <xacro:arg name="s_wheel_steering_joint_limits" default="-3.1416 3.1416 100.0 100000.0"/>
-  <xacro:arg name="s_wheel_rotation_joint_limits" default="100.0 100000.0"/>
-
-  <!-- Arguments for the fork -->
-  <xacro:arg name="fork_use_visual"     default="True"/>
-  <xacro:arg name="fork_use_collision"  default="True"/>
-  <!--
-  A fork can add a large mass far from the base center of mass.
-  If that inertia is included in simulation, the robot can oscillate or even tip over.
-  This robot is used mainly for kinematic simulation, not for accurate dynamic simulation.
-  For that reason, the fork inertia is disabled by default, so the fork is visible and attached
-  to the robot, but it does not change the simulated base dynamics.
-  -->
-  <xacro:arg name="fork_use_inertial"   default="False"/>
-  <xacro:arg name="fork_use_v_mesh"     default="True"/>
-  <xacro:arg name="fork_color"          default="0.1 0.1 0.1 1.0"/>
-  <xacro:arg name="fork_use_c_mesh"     default="True"/>
-  <xacro:arg name="fork_limits"         default="-0.005 0.8 0.2 20000.0"/>
-  <xacro:arg name="fork_rest_clearance" default="0.03"/>
-  <xacro:arg name="fork_tine_open"      default="False"/>
 
   <!-- Create properties from args for easy manipulation. -->
 
@@ -112,111 +83,98 @@ The common robot contains:
   <xacro:property name="steerable_wheel_2_name"   value="steerable_wheel_2"/>
   <xacro:property name="fork_name"                value="fork"/>
 
-  <xacro:property name="robot_size_x" value="2.737"/> <!-- orig: 2.733, now 2731 + 3 + 3 = 2737 -->
-  <xacro:property name="robot_size_y" value="0.774"/>
-  <xacro:property name="robot_size_z" value="1.7004688"/>
+  <xacro:property name="robot_size_x" value="2.733"/>
+  <xacro:property name="robot_size_y" value="0.75"/>
+  <xacro:property name="robot_size_z" value="1.8464685678"/>
 
+  <xacro:property name="body_use_visual"    value="$(arg body_use_visual)"/>
+  <xacro:property name="body_use_collision" value="$(arg body_use_collision)"/>
   <xacro:property name="body_use_inertial"  value="$(arg body_use_inertial)"/>
 
   <!--
   Base model overview:
-  - The base is composed of the chassis body and three steerable wheels (one longitudinal on the x-axis, plus left and right).
+  - The base is composed of the chassis body and three steerable wheels (one longitudinal on the
+    x-axis, plus left and right).
   - The chassis mesh is used for visual and collision representation.
-  - Dynamics are intentionally simplified: the chassis link uses null inertia, and the effective base mass/inertia are
-    concentrated in an internal ballast link.
+  - Dynamics are intentionally simplified: the chassis link uses null inertia, and the effective
+    base mass/inertia are concentrated in an internal ballast link.
 
   Ballast model:
-  - The ballast is a simple box located at the bottom of the chassis to keep the center of mass low and improve
-    numerical stability.
-  - This ballast represents the bulk mass of the real platform (including internal components not modeled in detail).
-  - The ballast has no visual or collision geometry because it is fully inside the chassis; only its inertial properties
-    are used.
-  - This is a deliberate reduced-order dynamic model aimed at stable and practical simulation, not a full
-    mass-distribution reconstruction of the real vehicle.
+  - The ballast is a simple box located at the bottom of the chassis to keep the center of mass low
+    and improve numerical stability.
+  - This ballast represents the bulk mass of the real platform (including internal components not
+    modeled in detail).
+  - The ballast has no visual or collision geometry because it is fully inside the chassis; only its
+    inertial properties are used.
+  - This is a deliberate reduced-order dynamic model aimed at stable and practical simulation, not a
+    full mass-distribution reconstruction of the real vehicle.
   -->
-  <xacro:property name="mass"             value="$(arg mass)"/>
-  <xacro:property name="body_size"        value="$(arg body_size)"/>
+  <xacro:property name="mass"             value="500"/>
+  <xacro:property name="body_size"        value="1.5030344725 0.750000 1.6400002837"/>
   <xacro:property name="body_size_values" value="${body_size.split()}"/>
 
   <!--
-  The property 'body_size_values' is a list of the three components of 'body_size', which are expected to be separated
-  by spaces.
+  The property 'body_size_values' is a list of the three components of 'body_size', which are
+  expected to be separated by spaces.
   -->
   <xacro:if value="${len(body_size_values) != 3}">
-    ${xacro.fatal("xacro arg body_size must contain exactly 3 values: x y z")}
+    ${xacro.fatal("body_size must contain exactly 3 values: x y z")}
   </xacro:if>
 
   <xacro:property name="body_size_x"           value="${float(body_size_values[0])}"/>
   <xacro:property name="body_size_y"           value="${float(body_size_values[1])}"/>
   <xacro:property name="body_size_z"           value="${float(body_size_values[2])}"/>
-  <xacro:property name="body_ground_clearance" value="$(arg body_ground_clearance)"/>
-  <xacro:property name="ballast_size_z"        value="$(arg ballast_size_z)"/>
-  <xacro:property name="dist_to_wheels"        value="$(arg dist_to_wheels)"/>
-  <xacro:property name="alpha_deg"             value="$(arg alpha_deg)"/>
+  <xacro:property name="body_ground_clearance" value="0.060468"/>
+  <xacro:property name="dist_to_wheels"        value="0.4861583853484584"/>
+
 
   <xacro:if value="${float(dist_to_wheels) &lt;= 0.0}">
-    ${xacro.fatal("xacro arg dist_to_wheels must be > 0")}
-  </xacro:if>
-
-  <xacro:if value="${float(alpha_deg) &lt;= 0.0 or float(alpha_deg) >= 180.0}">
-    ${xacro.fatal("xacro arg alpha_deg must be in range (0, 180) degrees")}
+    ${xacro.fatal("dist_to_wheels must be > 0")}
   </xacro:if>
 
   <!--
-  The frame of the mesh is located at its geometric center (See MeshLab), so it coincides with the frame of a box
-  shape.
-  Therefore, just one origin is needed no matter if a mesh or a box shape is used for the visual element.
-  The frame of the body, '${robot_prefix}${base_name}_link', is located at the center of the bottom face of the mesh or
-  box shape.
+  The frame of the body mesh is located at the geometric center in between the wheels, at the bottom
+  of the mesh, which is exactly the point where to position the ${base_name}_link.
   Scale is configured with `body_scale`.
-  The mesh has no color information.
+  The visual mesh provides its own material. Set `body_color` to override it.
   To access the mesh just use <package>/<path_to_mesh_within_package>.
   -->
-  <xacro:property name="body_mesh"  value="$(arg body_mesh)"/>
-  <xacro:property name="body_scale" value="$(arg body_scale)"/>
-  <xacro:property name="body_color" value="$(arg body_color)"/>
+  <xacro:property name="body_visual_mesh"    value="robot_forki3/meshes/forklift_body.obj"/>
+  <xacro:property name="body_collision_mesh" value="robot_forki3/meshes/forklift_body.stl"/>
+  <xacro:property name="body_scale"          value="1.0 1.0 1.0"/>
+  <xacro:property name="body_color"          value="$(arg body_color)"/>
 
   <!-- ===================================================================== -->
   <!-- Definition of links and joints for the rectangular base -->
   <!-- ===================================================================== -->
 
   <!--
-  The link '${base_name}footprint_link' is located on the ground, just below the link '${base_name}_link', at a distance
-  of 'ground_clearance' meters.
+  The link '${base_name}footprint_link' is located on the ground, just below the link
+  '${base_name}_link', at a distance of 'ground_clearance' meters.
   -->
   <link name="${robot_prefix}${base_name}_footprint_link"/>
 
   <link name="${robot_prefix}${base_name}_link">
-    <!--
-    Visual and collision are always enabled for the base body.
-    The ballast is inside the body, so it has no visual or collision elements.
-    -->
-    <visual>
-      <geometry>
-        <mesh filename="package://${body_mesh}" scale="${body_scale}"/>
-      </geometry>
-      <!--
-      The stl has its frame located at its geometric center.
-      By using rpy="0 0 0" and xyz="0 0 0.5*body_size_z", the link `${robot_prefix}${base_name}_link` is located at the
-      center of the bottom face of the mesh
-       -->
-      <origin rpy="0 0 0" xyz="0 0 ${0.5 * body_size_z}"/>
-      <material name="${robot_prefix}${base_name}_color">
-        <color rgba="${body_color}"/>
-      </material>
-    </visual>
+  <!--
+  Visual and collision geometry can be disabled independently for the base body.
+  The ballast is inside the body, so it has no visual or collision elements.
+  -->
+    <xacro:property name="body_visual_color"
+                    value="${robot_prefix + base_name + '_color ' + body_color if body_color != '' else ''}"/>
+    <xacro:if value="${body_use_visual}">
+      <xacro:visual_mesh
+        mesh="${body_visual_mesh}"
+        scale="${body_scale}"
+        mesh_origin="0 0 0 0 0 0"
+        color="${body_visual_color}"/>
+    </xacro:if>
 
-    <collision>
-      <geometry>
-        <mesh filename="package://${body_mesh}" scale="${body_scale}"/>
-      </geometry>
-      <!--
-      The stl has its frame located at its geometric center.
-      By using rpy="0 0 0" and xyz="0 0 0.5*body_size_z", the link `${robot_prefix}${base_name}_link` is located at the
-      center of the bottom face of the mesh
-       -->
-      <origin rpy="0 0 0" xyz="0 0 ${0.5 * body_size_z}"/>
-    </collision>
+    <xacro:if value="${body_use_collision}">
+      <xacro:collision_mesh
+        mesh="${body_collision_mesh}"
+        scale="${body_scale}"
+        mesh_origin="0 0 0 0 0 0"/>
+    </xacro:if>
 
     <xacro:null_inertia/>
   </link>
@@ -225,23 +183,24 @@ The common robot contains:
     <parent link="${robot_prefix}${base_name}_footprint_link"/>
     <child link="${robot_prefix}${base_name}_link"/>
     <!--
-    The link '${base_name}_link' is located at the center of the bottom face of the body, so it is at a height of
-    'ground_clearance' meters above the link '${base_name}_footprint_link'.
+    The link '${base_name}_link' is located at the center of the bottom face of the body, so it is
+    at a height of 'ground_clearance' meters above the link '${base_name}_footprint_link'.
     -->
     <origin rpy="0 0 0" xyz="0 0 ${body_ground_clearance}"/>
   </joint>
 
   <!--
-  The ballast is modeled as a box of size `body_size_x x body_size_y x ballast_size_z`, with its frame at the center of
+  The ballast is modeled as a box.
   the bottom face. This makes the ballast-link frame coincide with the body-link frame.
-  No visual or collision geometry is defined for the ballast because it is fully contained inside the body.
+  No visual or collision geometry is defined for the ballast because it is fully contained inside
+  the body.
   The ballast inertia is enabled only when `body_use_inertial` is enabled.
   -->
   <link name="${robot_prefix}${base_name}_ballast_link">
     <xacro:if value="${body_use_inertial}">
       <xacro:solid_box_inertia mass="${mass}"
-                               size="${body_size_x} ${body_size_y} ${ballast_size_z}"
-                               origin="0.0 0.0 ${0.5 * ballast_size_z} 0.0 0.0 0.0"/>
+                               size="0.8997000158 0.6679999828 0.015"
+                               origin="0 0 0 0 0 0"/>
     </xacro:if>
 
     <xacro:unless value="${body_use_inertial}">
@@ -252,7 +211,7 @@ The common robot contains:
   <joint name="${robot_prefix}${base_name}_ballast_joint" type="fixed">
     <parent link="${robot_prefix}${base_name}_link"/>
     <child link="${robot_prefix}${base_name}_ballast_link"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.23130818456411362 0.0 0.30250023305416107"/>
   </joint>
 
   <!--
@@ -270,9 +229,9 @@ The common robot contains:
   -->
   <xacro:property name="s_wheel_use_inertial" value="$(arg s_wheel_use_inertial)"/>
 
-  <xacro:property name="s_wheel_mass"                 value="$(arg s_wheel_mass)"/>
-  <xacro:property name="s_wheel_radius"               value="$(arg s_wheel_radius)"/>
-  <xacro:property name="s_wheel_thickness"            value="$(arg s_wheel_thickness)"/>
+  <xacro:property name="s_wheel_mass"                 value="10.0"/>
+  <xacro:property name="s_wheel_radius"               value="0.127"/>
+  <xacro:property name="s_wheel_thickness"            value="0.082"/>
   <xacro:property name="s_wheel_mesh"                 value=""/>
   <xacro:property name="s_wheel_mesh_scale"           value="1.0 1.0 1.0"/>
   <xacro:property name="s_wheel_color"                value="$(arg s_wheel_color)"/>
@@ -280,31 +239,34 @@ The common robot contains:
   <!--
   With this limits the steering joint can rotate from [-pi, pi] radians.
   -->
-  <xacro:property name="s_wheel_steering_joint_lower_limit" value="${-pi}"/>
-  <xacro:property name="s_wheel_steering_joint_upper_limit" value="${pi}"/>
   <!--
   Important:
-  The motion of this robot is controlled in velocity mode by a plugin of type 'gz::sim::systems::VelocityControl'.
+  The motion of this robot is controlled in velocity mode by a plugin of type
+  'gz::sim::systems::VelocityControl'.
   Each wheel is not commanded directly through torque/force or velocity commands.
-  Therefore, accurate values for the friction parameters of the wheel are not required (mu, mu2, slip1, slip2), just
-  values that provide low friction to minimize the interaction of the wheels with the ground and allow the robot to move
-  smoothly
-  Besides, the velocity limit and effort limit for the steering and rotation joints are set to such a high values that
-  they model ideal joints.
-  This is useful when the robot is controlled in velocity mode, to avoid the joint limits from interfering
-  with the control.
+  Therefore, accurate values for the friction parameters of the wheel are not required
+  (mu, mu2, slip1, slip2), just values that provide low friction to minimize the interaction of the
+  wheels with the ground and allow the robot to move smoothly
+  Besides, the velocity limit and effort limit for the steering and rotation joints are set to such
+  a high values that they model ideal joints.
+  This is useful when the robot is controlled in velocity mode, to avoid the joint limits from
+  interfering with the control.
   Read the macro 'steerable_wheel_macro.xacro' for more details about these limit parameters.
   -->
-  <xacro:property name="s_wheel_steering_joint_limits" value="$(arg s_wheel_steering_joint_limits)"/>
+  <xacro:property name="s_wheel_steering_joint_limits" value="-3.1416 3.1416 100.0 100000.0"/>
   <xacro:property name="s_wheel_rotation_joint_type"   value="continuous"/>
-  <xacro:property name="s_wheel_rotation_joint_limits" value="$(arg s_wheel_rotation_joint_limits)"/>
+  <xacro:property name="s_wheel_rotation_joint_limits" value="100.0 100000.0"/>
 
   <!-- z-coordinate of each steerable wheel w.r.t it parent frame -->
   <xacro:property name="z_s_wheel" value="${-body_ground_clearance + s_wheel_radius}"/>
-  <xacro:property name="d"         value="${float(dist_to_wheels)}"/>
-  <xacro:property name="alpha"     value="${radians(float(alpha_deg))}"/>
   <!--
-  Wheel planar coordinates from polar form:
+  The two rear wheels are symmetric about the x-axis.
+  Their calibrated coordinates follow the same polar-form relationship used by the previous geometry
+  calculation:
+  - `d` is `dist_to_wheels`, the radial distance from the base-frame origin to either rear wheel:
+      d = dist_to_wheels = sqrt(x_left^2 + y_left^2)
+  - `alpha` is the positive angle from the x-axis to the left wheel:
+      alpha = atan2(y_left, x_left)
   - Left wheel uses angle +alpha:
       x_left = d*cos(+alpha)
       y_left = d*sin(+alpha)
@@ -312,22 +274,16 @@ The common robot contains:
       x_right = d*cos(-alpha)
       y_right = d*sin(-alpha)
   Using trigonometric parity:
-  - cos(-alpha) = cos(alpha) -> x_right = x_left
-  - sin(-alpha) = -sin(alpha) -> y_right = -y_left
+  - cos(-alpha) = cos(alpha), so x_right = x_left.
+  - sin(-alpha) = -sin(alpha), so y_right = -y_left.
+  The values below are the measured coordinates in the stl file for the body.
+  longitudinal wheel remains on the x-axis and uses `dist_to_wheels` as its x coordinate.
   -->
-  <xacro:property name="x_s_wheel_left"  value="${d * cos(alpha)}"/>
-  <xacro:property name="y_s_wheel_left"  value="${d * sin(alpha)}"/>
-  <xacro:property name="x_s_wheel_right" value="${x_s_wheel_left}"/>
-  <xacro:property name="y_s_wheel_right" value="${-y_s_wheel_left}"/>
-  <!--
-  The longitudinal wheel is located on the x-axis, so its y coordinate is 0.
-  The x coordinate of the longitudinal wheel depends on the angle alpha:
-- If alpha >= 90 degrees, the longitudinal wheel is located in front of the robot, so its x coordinate is positive and
-  equal to d.
-- If alpha < 90 degrees, the longitudinal wheel is located at the back of the robot, so its x coordinate is negative and
-  equal to -d.
-  -->
-  <xacro:property name="x_s_wheel_longitudinal" value="${d if float(alpha_deg) >= 90.0 else -d}"/>
+  <xacro:property name="x_s_wheel_left"  value="-0.43454164266586304"/>
+  <xacro:property name="y_s_wheel_left"  value="0.2179989367723465"/>
+  <xacro:property name="x_s_wheel_right" value="-0.43454164266586304"/>
+  <xacro:property name="y_s_wheel_right" value="-0.2179989367723465"/>
+  <xacro:property name="x_s_wheel_front" value="${dist_to_wheels}"/>
 
   <!--
   The steerable_wheel macro creates:
@@ -343,7 +299,7 @@ The common robot contains:
   <xacro:steerable_wheel name="${steerable_wheel_0_name}"
                          prefix="${robot_prefix}"
                          parent_frame="${robot_prefix}${base_name}_link"
-                         use_visual="True"
+                         use_visual="$(arg s_wheel_front_use_visual)"
                          use_inertial="${s_wheel_use_inertial}"
                          v_mesh="${s_wheel_mesh}"
                          v_mesh_scale="${s_wheel_mesh_scale}"
@@ -355,12 +311,12 @@ The common robot contains:
                          steering_joint_limits="${s_wheel_steering_joint_limits}"
                          rotation_joint_type="${s_wheel_rotation_joint_type}"
                          rotation_joint_limits="${s_wheel_rotation_joint_limits}"
-                         joint_parent_fr_wheel_fr="${x_s_wheel_longitudinal} 0.0 ${z_s_wheel} 0.0 0.0 0.0"/>
+                         joint_parent_fr_wheel_fr="${x_s_wheel_front} 0.0 ${z_s_wheel} 0.0 0.0 0.0"/>
 
   <xacro:steerable_wheel name="${steerable_wheel_1_name}"
                          prefix="${robot_prefix}"
                          parent_frame="${robot_prefix}${base_name}_link"
-                         use_visual="True"
+                         use_visual="$(arg s_wheel_left_use_visual)"
                          use_inertial="${s_wheel_use_inertial}"
                          v_mesh="${s_wheel_mesh}"
                          v_mesh_scale="${s_wheel_mesh_scale}"
@@ -377,7 +333,7 @@ The common robot contains:
   <xacro:steerable_wheel name="${steerable_wheel_2_name}"
                          prefix="${robot_prefix}"
                          parent_frame="${robot_prefix}${base_name}_link"
-                         use_visual="True"
+                         use_visual="$(arg s_wheel_right_use_visual)"
                          use_inertial="${s_wheel_use_inertial}"
                          v_mesh="${s_wheel_mesh}"
                          v_mesh_scale="${s_wheel_mesh_scale}"
@@ -394,68 +350,37 @@ The common robot contains:
   <!-- ===================================================================== -->
   <!-- FORK -->
   <!-- ===================================================================== -->
-  <xacro:property name="fork_use_visual"     value="$(arg fork_use_visual)"/>
-  <xacro:property name="fork_use_collision"  value="$(arg fork_use_collision)"/>
-  <xacro:property name="fork_use_inertial"   value="$(arg fork_use_inertial)"/>
-  <xacro:property name="fork_use_v_mesh"     value="$(arg fork_use_v_mesh)"/>
-  <xacro:property name="fork_color"          value="$(arg fork_color)"/>
-  <xacro:property name="fork_use_c_mesh"     value="$(arg fork_use_c_mesh)"/>
-  <xacro:property name="fork_limits"         value="$(arg fork_limits)"/>
-  <xacro:property name="fork_rest_clearance" value="$(arg fork_rest_clearance)"/>
+  <xacro:property name="fork_limits"         value="-0.005 0.8 0.2 20000.0"/>
+  <xacro:property name="fork_dynamics"       value="10.0 1.0"/>
+  <xacro:property name="fork_rest_clearance" value="0.03"/>
 
-  <xacro:property name="fork_limits_seq"   value="${fork_limits.split()}"/>
+  <!-- Pose checked with Blender -->
+  <xacro:property name="fork_joint_parent_fr_root_fr" value="-0.762842 0 0.159212 0 0 ${pi}"/>
 
-  <xacro:if value="${len(fork_limits_seq) != 4}">
-    ${xacro.fatal("xacro arg fork_limits must contain exactly 4 values: lower upper velocity effort")}
-  </xacro:if>
+  <xacro:property name="fork_controller_sim_cfg" value="${sim_cfg.get('fork_controller', dict())}"/>
+  <xacro:property name="fork_controller_enabled" value="${fork_controller_sim_cfg.get('enabled', False)}"/>
+  <xacro:property name="fork_controller_initial_position"
+                  value="${fork_controller_sim_cfg.get('initial_position', '')}"/>
+  <xacro:property name="fork_controller_topic"   value="${fork_controller_sim_cfg.get('topic', '')}"/>
+  <xacro:property name="fork_controller_vel_max" value="${fork_controller_sim_cfg.get('vel_max', 0.04)}"/>
 
-  <!--
-  The fork_simple macro checks that the fork limits are valid for the fork joint.
-  This module only checks the part that is specific to the robot installation.
+  <xacro:include filename="${robot_forki3_pkg_dir}/urdf/fork_macro.xacro"/>
 
-  fork_lower_limit must be less than or equal to zero so that this installation allows downward
-  fork motion from the spawned joint position.
-  The distance floor-to-bottom_face_carriage must (fork_rest_clearance) be > fork_lower_limit,
-  otherwise the fork would collide with the floor when moving to its lower limit position.
-  -->
-  <xacro:property name="fork_lower_limit" value="${float(fork_limits_seq[0])}"/>
-
-  <xacro:if value="${fork_lower_limit > 0.0}">
-    ${xacro.fatal("xacro arg fork_limits must satisfy lower &lt;= 0 for this robot installation")}
-  </xacro:if>
-
-  <!--
-  At this point fork_lower_limit is less than or equal to zero, so the downward fork travel is
-  abs(fork_lower_limit).
-  -->
-  <xacro:if value="${python.abs(fork_lower_limit) > float(fork_rest_clearance)}">
-    ${xacro.fatal("xacro args fork_limits and fork_rest_clearance are inconsistent: the allowed downward fork travel exceeds the rest clearance")}
-  </xacro:if>
-
-  <xacro:property name="fork_carriage_len_x"   value="0.06"/>
-  <xacro:property name="fork_carriage_len_z"   value="0.06"/>
-  <xacro:property name="fork_carriage_mount_x" value="${-0.5 * body_size_x}"/>
-  <xacro:property name="fork_carriage_mount_y" value="0"/>
-  <xacro:property name="fork_carriage_mount_z" value="${-body_ground_clearance + fork_rest_clearance}"/>
-  <xacro:property name="tine_size_x"           value="1.20"/>
-  <xacro:property name="tine_size_y"           value="0.12"/>
-  <xacro:property name="tine_size_z"           value="0.06"/>
-  <xacro:property name="tine_separation"       value="0.25"/>
-
-  <xacro:fork_simple name="${fork_name}"
-                     prefix="${robot_prefix}"
-                     parent_frame="${robot_prefix}${base_name}_link"
-                     use_visual="${fork_use_visual}"
-                     use_collision="${fork_use_collision}"
-                     use_inertial="${fork_use_inertial}"
-                     use_v_mesh="${fork_use_v_mesh}"
-                     color="${fork_color}"
-                     use_c_mesh="${fork_use_c_mesh}"
-                     tine_open="$(arg fork_tine_open)"
-                     carriage_size_x="${fork_carriage_len_x}"
-                     carriage_size_z="${fork_carriage_len_z}"
-                     limits="${fork_limits}"
-                     joint_parent_fr_root_fr="${fork_carriage_mount_x} ${fork_carriage_mount_y} ${fork_carriage_mount_z} 0 0 ${pi}"/>
+  <xacro:fork name="${fork_name}"
+              prefix="${robot_prefix}"
+              parent_frame="${robot_prefix}${base_name}_link"
+              joint_parent_fr_root_fr="${fork_joint_parent_fr_root_fr}"
+              use_visual="$(arg fork_use_visual)"
+              use_collision="$(arg fork_use_collision)"
+              color="$(arg fork_color)"
+              limits="${fork_limits}"
+              dynamics="${fork_dynamics}"
+              rest_clearance="${fork_rest_clearance}"
+              controller_enabled="${fork_controller_enabled}"
+              controller_initial_position="${fork_controller_initial_position}"
+              controller_topic="${fork_controller_topic}"
+              controller_vel_max="${fork_controller_vel_max}"
+              robot_namespace="${robot_namespace}"/>
 
   <!-- ===================================================================== -->
   <!-- PLUGINS FOR THE BASE -->
@@ -463,6 +388,61 @@ The common robot contains:
 
   <xacro:if value="${sim_file != ''}">
     <gazebo>
+      <xacro:property name="battery_sim_cfg" value="${sim_cfg.get('battery', dict())}"/>
+
+      <xacro:if value="${battery_sim_cfg.get('enabled', False)}">
+        <xacro:property name="battery_voltage" value="${battery_sim_cfg.get('voltage', '')}"/>
+        <xacro:property name="battery_capacity" value="${battery_sim_cfg.get('capacity', '')}"/>
+        <xacro:property name="battery_power_load" value="${battery_sim_cfg.get('power_load', '')}"/>
+
+        <xacro:if value="${battery_voltage == ''}">
+          ${xacro.fatal("battery.voltage is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:if value="${battery_capacity == ''}">
+          ${xacro.fatal("battery.capacity is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:if value="${battery_power_load == ''}">
+          ${xacro.fatal("battery.power_load is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:property name="battery_power_draining_topic"
+                        value="${battery_sim_cfg.get('power_draining_topic', '')}"/>
+        <xacro:if value="${battery_power_draining_topic != ''}">
+          <xacro:resolve_topic prop_id="battery_power_draining_topic"
+                               topic="${battery_power_draining_topic}"
+                               namespace="${robot_namespace}"/>
+        </xacro:if>
+
+        <xacro:property name="battery_stop_power_draining_topic"
+                        value="${battery_sim_cfg.get('stop_power_draining_topic', '')}"/>
+        <xacro:if value="${battery_stop_power_draining_topic != ''}">
+          <xacro:resolve_topic prop_id="battery_stop_power_draining_topic"
+                               topic="${battery_stop_power_draining_topic}"
+                               namespace="${robot_namespace}"/>
+        </xacro:if>
+
+        <xacro:plugin_linear_battery
+          name="main_battery"
+          voltage="${battery_voltage}"
+          capacity="${battery_capacity}"
+          power_load="${battery_power_load}"
+          fix_issue_225="${battery_sim_cfg.get('fix_issue_225', True)}"
+          open_circuit_voltage_constant_coef="${battery_sim_cfg.get('open_circuit_voltage_constant_coef', '')}"
+          open_circuit_voltage_linear_coef="${battery_sim_cfg.get('open_circuit_voltage_linear_coef', '')}"
+          initial_charge="${battery_sim_cfg.get('initial_charge', '')}"
+          resistance="${battery_sim_cfg.get('resistance', '')}"
+          smooth_current_tau="${battery_sim_cfg.get('smooth_current_tau', '')}"
+          invert_current_sign="${battery_sim_cfg.get('invert_current_sign', '')}"
+          start_draining="${battery_sim_cfg.get('start_draining', '')}"
+          power_draining_topic="${battery_power_draining_topic}"
+          stop_power_draining_topic="${battery_stop_power_draining_topic}"
+          enable_recharge="${battery_sim_cfg.get('enable_recharge', '')}"
+          charging_time="${battery_sim_cfg.get('charging_time', '')}"
+          recharge_by_topic="${battery_sim_cfg.get('recharge_by_topic', '')}"/>
+      </xacro:if>
+
       <!--
       To find the reference for the system Gazebo plugins:
       1. Go to: https://gazebosim.org/libs/
@@ -776,40 +756,6 @@ The common robot contains:
             namespace="${robot_namespace}"
             topic="${sw2_rj_topic}"
             actuator_number="2"/>
-        </xacro:if>
-      </xacro:if>
-
-      <!--
-      Define a 'JointPositionController' Gazebo plugin to control the
-      `${robot_prefix}${fork_name}_carriage_joint` in position.
-      In this case, we use Float64 messages (std_msgs/msg/Float64) to transport the position
-      target and Gazebo uses the PID-position mode of `JointPositionController`.
-      The PID gains and limits are read from `sim_cfg.fork_controller`.
-      -->
-      <xacro:property name="fork_controller_sim_cfg" value="${sim_cfg.get('fork_controller', dict())}"/>
-
-      <xacro:if value="${fork_controller_sim_cfg.get('enabled', False)}">
-        <xacro:property name="fork_topic" value="${fork_controller_sim_cfg.get('topic', '')}"/>
-
-        <xacro:if value="${fork_topic == ''}">
-          ${xacro.fatal("fork_controller.topic is required when fork_controller.enabled is true.")}
-        </xacro:if>
-
-        <xacro:if value="${fork_topic != ''}">
-          <xacro:plugin_fork_joint_f64_pos_pid
-            joint_name="${robot_prefix}${fork_name}_carriage_joint"
-            joint_limits="${fork_limits}"
-            p_gain="${fork_controller_sim_cfg.get('p_gain', 200.0)}"
-            i_gain="${fork_controller_sim_cfg.get('i_gain', 5.0)}"
-            d_gain="${fork_controller_sim_cfg.get('d_gain', 20.0)}"
-            i_max="${fork_controller_sim_cfg.get('i_max', 50.0)}"
-            i_min="${fork_controller_sim_cfg.get('i_min', -50.0)}"
-            cmd_max="${fork_controller_sim_cfg.get('cmd_max', 200.0)}"
-            cmd_min="${fork_controller_sim_cfg.get('cmd_min', -200.0)}"
-            cmd_offset="${fork_controller_sim_cfg.get('cmd_offset', 0.0)}"
-            initial_position="${fork_controller_sim_cfg.get('initial_position', '')}"
-            namespace="${robot_namespace}"
-            topic="${fork_topic}"/>
         </xacro:if>
       </xacro:if>
 
