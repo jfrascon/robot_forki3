@@ -2,20 +2,25 @@ repositories:
     joint_position_controller_server:
         type: git
         url: https://github.com/jfrascon/joint_position_controller_server.git
-        version: acf5f24b8621f74ff3a8848547db84068b8a7820
+        version: ebb4b09a1c44e10a15f9ca74ed37815f2b36fa95
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
     ground_vehicle_kinematics:
         type: git
         url: https://github.com/jfrascon/ground_vehicle_kinematics.git
-        version: 8ac3199fbd35ee38866411c33366da30ad0cee5e
+        version: c2809e91b9538ca8c1c5ecbcbf07fd56c0523d98
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
     robotics_description:
         type: git
         url: https://github.com/jfrascon/robotics_description.git
-        version: ca6a4358ef81d15744ea5e4e7d0f21f1cf6de60c
+        version: 2fd89b49f5dec373b4144ae59d5926b0e2c6b46a
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
     ros2_launch_helpers:
         type: git
         url: https://github.com/jfrascon/ros2_launch_helpers.git
-        version: 62b2b516888238bdf1c80d32f5a73c6c1459002d
+        version: 8b2741affd77b889e5dbcf38840712351f691c5a
+        #exclude: [] # list of repos files inside repository_path to exclude (optional)
+    ros_gz_tools:
+        type: git
+        url: git@gitlab.local.eurecat.org:robotics-automation/eut_ros_gz_tools.git
+        version: a6c61a4ec847fbf75460205e349793141261ea11
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
