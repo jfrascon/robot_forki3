@@ -43,12 +43,6 @@ Visualization Manager:
           Value: true
         forki3_back_bottom_lidar_root_link:
           Value: true
-        forki3_back_top_lidar_imu_link:
-          Value: true
-        forki3_back_top_lidar_link:
-          Value: true
-        forki3_back_top_lidar_root_link:
-          Value: true
         forki3_base_ballast_link:
           Value: true
         forki3_base_footprint_link:
@@ -75,28 +69,6 @@ Visualization Manager:
           Value: true
         forki3_fork_camera_link:
           Value: true
-        forki3_fork_carriage_link:
-          Value: true
-        forki3_fork_left_mast_link:
-          Value: true
-        forki3_fork_left_tine_bottom_plate_link:
-          Value: true
-        forki3_fork_left_tine_front_plate_link:
-          Value: true
-        forki3_fork_left_tine_link:
-          Value: true
-        forki3_fork_left_tine_shank_link:
-          Value: true
-        forki3_fork_right_mast_link:
-          Value: true
-        forki3_fork_right_tine_bottom_plate_link:
-          Value: true
-        forki3_fork_right_tine_front_plate_link:
-          Value: true
-        forki3_fork_right_tine_link:
-          Value: true
-        forki3_fork_right_tine_shank_link:
-          Value: true
         forki3_fork_root_link:
           Value: true
         forki3_front_top_lidar_imu_link:
@@ -117,8 +89,6 @@ Visualization Manager:
           Value: true
         forki3_steerable_wheel_2_steerable_link:
           Value: true
-        forki3_top_platform_link:
-          Value: true
       Marker Scale: 0.5
       Name: TF
       Show Arrows: true
@@ -129,32 +99,18 @@ Visualization Manager:
           forki3_base_link:
             forki3_back_bottom_lidar_root_link:
               forki3_back_bottom_lidar_link: {}
-            forki3_back_top_lidar_root_link:
-              forki3_back_top_lidar_link:
-                forki3_back_top_lidar_imu_link: {}
             forki3_base_ballast_link: {}
             forki3_fork_root_link:
-              forki3_fork_carriage_link:
-                forki3_fork_camera_bottom_screw_frame:
-                  forki3_fork_camera_link:
-                    forki3_fork_camera_color_frame:
-                      forki3_fork_camera_color_optical_frame: {}
-                    forki3_fork_camera_depth_frame:
-                      forki3_fork_camera_depth_optical_frame: {}
-                    forki3_fork_camera_infra1_frame:
-                      forki3_fork_camera_infra1_optical_frame: {}
-                    forki3_fork_camera_infra2_frame:
-                      forki3_fork_camera_infra2_optical_frame: {}
-                forki3_fork_left_tine_link:
-                  forki3_fork_left_tine_front_plate_link: {}
-                forki3_fork_left_tine_shank_link: {}
-                forki3_fork_right_tine_link:
-                  forki3_fork_right_tine_front_plate_link: {}
-                forki3_fork_right_tine_shank_link: {}
-              forki3_fork_left_mast_link: {}
-              forki3_fork_left_tine_bottom_plate_link: {}
-              forki3_fork_right_mast_link: {}
-              forki3_fork_right_tine_bottom_plate_link: {}
+              forki3_fork_camera_bottom_screw_frame:
+                forki3_fork_camera_link:
+                  forki3_fork_camera_color_frame:
+                    forki3_fork_camera_color_optical_frame: {}
+                  forki3_fork_camera_depth_frame:
+                    forki3_fork_camera_depth_optical_frame: {}
+                  forki3_fork_camera_infra1_frame:
+                    forki3_fork_camera_infra1_optical_frame: {}
+                  forki3_fork_camera_infra2_frame:
+                    forki3_fork_camera_infra2_optical_frame: {}
             forki3_front_top_lidar_root_link:
               forki3_front_top_lidar_link:
                 forki3_front_top_lidar_imu_link: {}
@@ -164,7 +120,6 @@ Visualization Manager:
               forki3_steerable_wheel_1_rotation_link: {}
             forki3_steerable_wheel_2_steerable_link:
               forki3_steerable_wheel_2_rotation_link: {}
-            forki3_top_platform_link: {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -194,19 +149,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        forki3_back_top_lidar_imu_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        forki3_back_top_lidar_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        forki3_back_top_lidar_root_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         forki3_base_ballast_link:
           Alpha: 1
           Show Axes: false
@@ -261,61 +203,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        forki3_fork_carriage_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_left_mast_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_left_tine_bottom_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_left_tine_front_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_left_tine_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_left_tine_shank_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_right_mast_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_right_tine_bottom_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_right_tine_front_plate_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_right_tine_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_fork_right_tine_shank_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         forki3_fork_root_link:
           Alpha: 1
           Show Axes: false
@@ -360,11 +247,6 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        forki3_top_platform_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
@@ -403,39 +285,6 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /sim_debug/forki3/front_top_lidar/scan/points
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color: 170; 255; 127
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 0
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: back_top_lidar
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.019999999552965164
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /sim_debug/forki3/back_top_lidar/scan/points
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
