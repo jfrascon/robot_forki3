@@ -3,7 +3,7 @@ project(robot_forki3)
 
 find_package(ament_cmake REQUIRED)
 install(
-  DIRECTORY config launch rviz urdf worlds
+  DIRECTORY config doc launch rviz urdf worlds
   DESTINATION share/${PROJECT_NAME}
   PATTERN "__pycache__" EXCLUDE
   PATTERN "*.pyc" EXCLUDE)
