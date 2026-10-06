@@ -47,3 +47,22 @@ def test_legacy_xargs_contract_is_removed() -> None:
     xargs_dir = PACKAGE_DIR / 'xargs'
 
     assert not list(xargs_dir.glob('*.yaml'))
+
+
+@pytest.mark.parametrize(
+    'sensor, expected_mount',
+    [
+        ('front_top_lidar', '-0.07647355 0 1.786 0 0 0'),
+        ('back_bottom_lidar', '-0.692435 0 0.019941 0 0 3.141592653589793'),
+    ],
+)
+def test_sensor_mounts_are_model_properties(sensor: str, expected_mount: str) -> None:
+    model_path = PACKAGE_DIR / 'urdf' / 'robot_forki3_a.xacro'
+    source = model_path.read_text(encoding='utf-8')
+    mount_name = f'{sensor}_mount'
+
+    assert mount_name not in _xacro_arg_defaults(model_path)
+    assert f'$(arg {mount_name})' not in source
+    assert re.search(
+        rf'<xacro:property\s+name="{mount_name}"\s+value="{re.escape(expected_mount)}"', source
+    )

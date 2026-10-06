@@ -145,12 +145,12 @@ def test_wheel_visual_can_be_disabled(argument: str, wheel_name: str, tmp_path: 
 
 
 @pytest.mark.parametrize(
-    'mount_argument, expected_pitch',
-    [('', math.pi / 6), ('front_top_lidar_mount:="-0.07647355 0 1.786 0 0 0"', 0.0)],
-    ids=['tilted_default', 'level_override'],
+    'mount_argument',
+    ['', 'front_top_lidar_mount:="1 2 3 0 0.5235987755982988 0"'],
+    ids=['level_default', 'mount_argument_ignored'],
 )
 def test_model_a_mounts_one_livox_mid360_on_the_base_link(
-    tmp_path: Path, mount_argument: str, expected_pitch: float
+    tmp_path: Path, mount_argument: str
 ) -> None:
     urdf_path = tmp_path / 'model_a.urdf'
     xacro_path = PACKAGE_DIR / 'urdf' / 'robot_forki3_a.xacro'
@@ -167,7 +167,7 @@ def test_model_a_mounts_one_livox_mid360_on_the_base_link(
     assert origin is not None
     assert origin.attrib['xyz'] == '-0.07647355 0 1.786'
     assert tuple(float(value) for value in origin.attrib['rpy'].split()) == pytest.approx(
-        (0.0, expected_pitch, 0.0)
+        (0.0, 0.0, 0.0)
     )
     assert robot.find("./link[@name='forki3_back_top_lidar_root_link']") is None
     assert robot.find("./link[@name='forki3_top_platform_link']") is None
