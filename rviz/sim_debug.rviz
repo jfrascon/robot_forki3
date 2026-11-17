@@ -77,17 +77,17 @@ Visualization Manager:
           Value: true
         forki3_front_top_lidar_root_link:
           Value: true
-        forki3_steerable_wheel_0_rotation_link:
+        forki3_front_steerable_wheel_rotation_link:
           Value: true
-        forki3_steerable_wheel_0_steerable_link:
+        forki3_front_steerable_wheel_steerable_link:
           Value: true
-        forki3_steerable_wheel_1_rotation_link:
+        forki3_rear_left_steerable_wheel_rotation_link:
           Value: true
-        forki3_steerable_wheel_1_steerable_link:
+        forki3_rear_left_steerable_wheel_steerable_link:
           Value: true
-        forki3_steerable_wheel_2_rotation_link:
+        forki3_rear_right_steerable_wheel_rotation_link:
           Value: true
-        forki3_steerable_wheel_2_steerable_link:
+        forki3_rear_right_steerable_wheel_steerable_link:
           Value: true
       Marker Scale: 0.5
       Name: TF
@@ -114,12 +114,12 @@ Visualization Manager:
             forki3_front_top_lidar_root_link:
               forki3_front_top_lidar_link:
                 forki3_front_top_lidar_imu_link: {}
-            forki3_steerable_wheel_0_steerable_link:
-              forki3_steerable_wheel_0_rotation_link: {}
-            forki3_steerable_wheel_1_steerable_link:
-              forki3_steerable_wheel_1_rotation_link: {}
-            forki3_steerable_wheel_2_steerable_link:
-              forki3_steerable_wheel_2_rotation_link: {}
+            forki3_front_steerable_wheel_steerable_link:
+              forki3_front_steerable_wheel_rotation_link: {}
+            forki3_rear_left_steerable_wheel_steerable_link:
+              forki3_rear_left_steerable_wheel_rotation_link: {}
+            forki3_rear_right_steerable_wheel_steerable_link:
+              forki3_rear_right_steerable_wheel_rotation_link: {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -220,30 +220,30 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        forki3_steerable_wheel_0_rotation_link:
+        forki3_front_steerable_wheel_rotation_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        forki3_steerable_wheel_0_steerable_link:
+        forki3_front_steerable_wheel_steerable_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        forki3_steerable_wheel_1_rotation_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        forki3_steerable_wheel_1_steerable_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        forki3_steerable_wheel_2_rotation_link:
+        forki3_rear_left_steerable_wheel_rotation_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        forki3_steerable_wheel_2_steerable_link:
+        forki3_rear_left_steerable_wheel_steerable_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        forki3_rear_right_steerable_wheel_rotation_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        forki3_rear_right_steerable_wheel_steerable_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false

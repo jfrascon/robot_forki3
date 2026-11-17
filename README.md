@@ -10,6 +10,8 @@
 
 [`common.xacro`](urdf/common.xacro) defines the shared three-steer platform, including the chassis, wheel geometry, fork interface, and Gazebo plugins. Both robot models include this file before adding their own equipment.
 
+With `robot_name:=fl1`, the platform exposes `fl1_fork_root_joint` and the wheel joints `fl1_front_steerable_wheel_steering_joint`, `fl1_front_steerable_wheel_rotation_joint`, `fl1_rear_right_steerable_wheel_steering_joint`, `fl1_rear_right_steerable_wheel_rotation_joint`, `fl1_rear_left_steerable_wheel_steering_joint`, and `fl1_rear_left_steerable_wheel_rotation_joint`. Wheel link names use the same position names with `_steerable_link` and `_rotation_link` suffixes. These replace the former numbered wheel names, so custom parameter files and RViz configurations must use the new names. The `ground_vehicle_kinematics` configuration keys remain `steerable_wheel_0`, `steerable_wheel_1`, and `steerable_wheel_2`, corresponding to front, rear left, and rear right; only their wheel and joint `name` values change. Simulation controller keys and actuator indices keep the same numbering.
+
 The package also provides the platform meshes under [`meshes`](meshes), while the sensor models and shared Gazebo plugin macros come from the `robotics_description` dependency.
 
 ### Robot models

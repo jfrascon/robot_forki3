@@ -78,9 +78,9 @@ The common robot contains:
 
   <!-- Names for components -->
   <xacro:property name="base_name"                value="base"/>
-  <xacro:property name="steerable_wheel_0_name"   value="steerable_wheel_0"/>
-  <xacro:property name="steerable_wheel_1_name"   value="steerable_wheel_1"/>
-  <xacro:property name="steerable_wheel_2_name"   value="steerable_wheel_2"/>
+  <xacro:property name="steerable_wheel_0_name"   value="front_steerable_wheel"/>
+  <xacro:property name="steerable_wheel_1_name"   value="rear_left_steerable_wheel"/>
+  <xacro:property name="steerable_wheel_2_name"   value="rear_right_steerable_wheel"/>
   <xacro:property name="fork_name"                value="fork"/>
 
   <xacro:property name="robot_size_x" value="2.733"/>

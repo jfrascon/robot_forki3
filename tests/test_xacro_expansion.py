@@ -122,9 +122,9 @@ def test_body_geometry_can_be_disabled(argument: str, element: str, tmp_path: Pa
 @pytest.mark.parametrize(
     ('argument', 'wheel_name'),
     [
-        ('s_wheel_front_use_visual', 'steerable_wheel_0'),
-        ('s_wheel_left_use_visual', 'steerable_wheel_1'),
-        ('s_wheel_right_use_visual', 'steerable_wheel_2'),
+        ('s_wheel_front_use_visual', 'front_steerable_wheel'),
+        ('s_wheel_left_use_visual', 'rear_left_steerable_wheel'),
+        ('s_wheel_right_use_visual', 'rear_right_steerable_wheel'),
     ],
 )
 def test_wheel_visual_can_be_disabled(argument: str, wheel_name: str, tmp_path: Path) -> None:
@@ -230,9 +230,9 @@ def test_three_swerve_parameters_match_generated_wheel_geometry(
     params = yaml.safe_load(params_path.read_text(encoding='utf-8'))
     wheels = params['/**/three_swerve_kinematics']['ros__parameters']['steerable_wheels']
 
-    for wheel_index in range(3):
-        wheel_name = f'steerable_wheel_{wheel_index}'
-        wheel_params = wheels[wheel_name]
+    for wheel_index, position in enumerate(('front', 'rear_left', 'rear_right')):
+        wheel_name = f'{position}_steerable_wheel'
+        wheel_params = wheels[f'steerable_wheel_{wheel_index}']
         steering_joint = robot.find(f"./joint[@name='forki3_{wheel_name}_steering_joint']")
         rotation_link = robot.find(f"./link[@name='forki3_{wheel_name}_rotation_link']")
 
@@ -260,6 +260,35 @@ def test_three_swerve_parameters_match_generated_wheel_geometry(
         assert wheel_params['rotation_joint']['name'] == (
             f'$(var robot_prefix){wheel_name}_rotation_joint'
         )
+
+
+@pytest.mark.parametrize('robot_model', ['base', 'a'])
+@pytest.mark.parametrize('simulation', [False, True])
+def test_fl1_joint_names_match_the_robot_contract(
+    robot_model: str, simulation: bool, tmp_path: Path
+) -> None:
+    urdf_path = tmp_path / f'{robot_model}_fl1.urdf'
+    xacro_path = PACKAGE_DIR / 'urdf' / f'robot_forki3_{robot_model}.xacro'
+    sim_path = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'default_simulation.yaml'
+    sim_argument = f' sim_file:="{sim_path}"' if simulation else ''
+    result = run_bash(f'xacro "{xacro_path}" robot_name:=fl1{sim_argument} > "{urdf_path}"')
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    robot = ElementTree.parse(urdf_path)
+    expected = {'fl1_fork_root_joint'} | {
+        f'fl1_{position}_steerable_wheel_{motion}_joint'
+        for position in ('front', 'rear_right', 'rear_left')
+        for motion in ('steering', 'rotation')
+    }
+    movable_joints = {
+        joint.attrib['name']
+        for joint in robot.findall('./joint')
+        if joint.attrib['type'] != 'fixed'
+    }
+    assert movable_joints == expected
+    if simulation:
+        plugin_joints = {joint.text for joint in robot.findall('./gazebo/plugin/joint_name')}
+        assert plugin_joints == expected
 
 
 @pytest.mark.parametrize('robot_model', ['base', 'a'])
