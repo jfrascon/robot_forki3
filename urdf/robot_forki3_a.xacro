@@ -24,7 +24,7 @@ Intel RealSense D435 camera.
   <xacro:arg name="fork_rgbd_use_collision"    default="True"/>
   <xacro:arg name="fork_rgbd_use_inertial"     default="True"/>
   <xacro:arg name="fork_rgbd_use_v_mesh"       default="True"/>
-  <xacro:arg name="fork_rgbd_color"            default="0.5 0.5 0.5 1.0"/>
+  <xacro:arg name="fork_rgbd_color"            default=""/>
   <!-- Use shape instead of mesh for collision by default. -->
   <xacro:arg name="fork_rgbd_use_c_mesh"       default="False"/>
 
