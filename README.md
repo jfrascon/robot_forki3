@@ -63,7 +63,7 @@ mkdir -p "${WORKSPACE}/src"
 git clone https://github.com/jfrascon/robot_forki3.git ${WORKSPACE}/src/robot_forki3"
 vcs import "${WORKSPACE}/src" < "${WORKSPACE}/robot_forki3/deps.repos"
 source /opt/ros/jazzy/setup.bash
-rosdep install --from-paths "${WORKSPACE}" --ignore-src -r -y
+rosdep install --from-paths "${WORKSPACE}/src" --ignore-src -r -y
 ```
 
 ## Build
@@ -96,8 +96,8 @@ These launches are useful for checking model changes and testing newly added sen
 Run one of the following scripts to visualize the corresponding model.
 
 ```bash
-"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_base.sh"
-"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_a.sh"
+"${WORKSPACE}/src/robot_forki3/scripts/debug_robot_forki3_base.sh"
+"${WORKSPACE}/src/robot_forki3/scripts/debug_robot_forki3_a.sh"
 ```
 
 Each script accepts the arguments supported by its debug launch file. To see the available arguments, run the corresponding command.
@@ -110,7 +110,7 @@ ros2 launch robot_forki3 debug_robot_forki3_a.launch.py --show-args
 For example, run model A without the Gazebo GUI or RViz.
 
 ```bash
-"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_a.sh" \
+"${WORKSPACE}/src/robot_forki3/scripts/debug_robot_forki3_a.sh" \
   rviz_enabled:=False \
   gzgui_enabled:=False
 ```
@@ -124,9 +124,9 @@ You can also render a model and validate the resulting URDF directly with `check
 ```bash
 ros2 launch robot_forki3 render_robot_urdf.launch.py \
   robot_name:=forki3 \
-  robot_xacro_file:="${WORKSPACE}/robot_forki3/urdf/robot_forki3_a.xacro" \
-  robot_xacro_args_file:="${WORKSPACE}/robot_forki3/config/model_a/default_xacro_args.yaml" \
-  robot_sim_file:="${WORKSPACE}/robot_forki3/config/model_a/default_simulation.yaml" \
+  robot_xacro_file:="${WORKSPACE}/src/robot_forki3/urdf/robot_forki3_a.xacro" \
+  robot_xacro_args_file:="${WORKSPACE}/src/robot_forki3/config/model_a/default_xacro_args.yaml" \
+  robot_sim_file:="${WORKSPACE}/src/robot_forki3/config/model_a/default_simulation.yaml" \
   robot_urdf_file:=/tmp/forki3_a.urdf
 check_urdf /tmp/forki3_a.urdf
 ```
