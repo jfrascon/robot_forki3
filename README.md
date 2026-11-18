@@ -61,9 +61,9 @@ For a new workspace, clone the package and import its source dependencies before
 export WORKSPACE="/path/to/your/workspace"
 mkdir -p "${WORKSPACE}/src"
 git clone https://github.com/jfrascon/robot_forki3.git ${WORKSPACE}/src/robot_forki3"
-vcs import "${WORKSPACE}/src" < "${WORKSPACE}/src/robot_forki3/deps.repos"
+vcs import "${WORKSPACE}/src" < "${WORKSPACE}/robot_forki3/deps.repos"
 source /opt/ros/jazzy/setup.bash
-rosdep install --from-paths "${WORKSPACE}/src" --ignore-src -r -y
+rosdep install --from-paths "${WORKSPACE}" --ignore-src -r -y
 ```
 
 ## Build
@@ -76,6 +76,17 @@ colcon build --merge-install --packages-up-to robot_forki3
 source install/setup.bash
 ```
 
+## Tests
+
+Build and run the tests for this package and its workspace dependencies from the workspace root.
+
+```bash
+cd "${WORKSPACE}"
+colcon build --merge-install --packages-up-to robot_forki3
+colcon test --merge-install --packages-up-to robot_forki3
+colcon test-result --test-result-base build --verbose
+```
+
 ## Visualize the models
 
 The package includes debug launch files and supporting resources to visualize either model in Gazebo and RViz without adding it to a project. Each launch runs the model in a simple test world so that you can inspect its geometry and receive data from its simulated sensors when they are enabled in the simulation file.
@@ -85,9 +96,8 @@ These launches are useful for checking model changes and testing newly added sen
 Run one of the following scripts to visualize the corresponding model.
 
 ```bash
-robot_forki3_share="$(ros2 pkg prefix robot_forki3)/share/robot_forki3"
-"${robot_forki3_share}/scripts/debug_robot_forki3_base.sh"
-"${robot_forki3_share}/scripts/debug_robot_forki3_a.sh"
+"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_base.sh"
+"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_a.sh"
 ```
 
 Each script accepts the arguments supported by its debug launch file. To see the available arguments, run the corresponding command.
@@ -100,36 +110,23 @@ ros2 launch robot_forki3 debug_robot_forki3_a.launch.py --show-args
 For example, run model A without the Gazebo GUI or RViz.
 
 ```bash
-robot_forki3_share="$(ros2 pkg prefix robot_forki3)/share/robot_forki3"
-"${robot_forki3_share}/scripts/debug_robot_forki3_a.sh" \
+"${WORKSPACE}/robot_forki3/scripts/debug_robot_forki3_a.sh" \
   rviz_enabled:=False \
   gzgui_enabled:=False
 ```
 
 ![Forki3 model A debug simulation in Gazebo and RViz](doc/images/robot_forki3_a_debug.png)
 
-## Tests
-
-Build and run the package tests from the workspace root.
-
-```bash
-cd "${WORKSPACE}"
-colcon build --merge-install --packages-select robot_forki3
-colcon test --merge-install --packages-select robot_forki3
-colcon test-result --test-result-base build --verbose
-```
-
-### Inspect the generated URDF
+## Inspect the generated URDF
 
 You can also render a model and validate the resulting URDF directly with `check_urdf`. The following example uses model A.
 
 ```bash
-robot_forki3_share="$(ros2 pkg prefix robot_forki3)/share/robot_forki3"
 ros2 launch robot_forki3 render_robot_urdf.launch.py \
   robot_name:=forki3 \
-  robot_xacro_file:="${robot_forki3_share}/urdf/robot_forki3_a.xacro" \
-  robot_xacro_args_file:="${robot_forki3_share}/config/model_a/default_xacro_args.yaml" \
-  robot_sim_file:="${robot_forki3_share}/config/model_a/default_simulation.yaml" \
+  robot_xacro_file:="${WORKSPACE}/robot_forki3/urdf/robot_forki3_a.xacro" \
+  robot_xacro_args_file:="${WORKSPACE}/robot_forki3/config/model_a/default_xacro_args.yaml" \
+  robot_sim_file:="${WORKSPACE}/robot_forki3/config/model_a/default_simulation.yaml" \
   robot_urdf_file:=/tmp/forki3_a.urdf
 check_urdf /tmp/forki3_a.urdf
 ```
